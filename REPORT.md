@@ -1,21 +1,38 @@
-# Wireless Network Security Monitor
+<p align="center">
+  <img src="UPES_LOGO.png" alt="UPES Logo" width="350"/>
+</p>
 
-## Device Behavior Fingerprinting and Risk Scoring for Small Institutional Networks
+<h2 align="center">University of Petroleum and Energy Studies</h2>
+<p align="center">Dehradun, Uttarakhand, India</p>
 
----
 
-**Project Report**
+<h2 align="center">Wireless Network Security Monitor</h1>
+<p align="center">Device Behavior Fingerprinting and Risk Scoring<br>for Medium-Small Institutional Networks</p>
 
----
 
-| | |
-|---|---|
-| **Project Title** | Wireless Network Security Monitor |
-| **Domain** | Network Security / IoT / Wireless Intrusion Detection |
-| **Technology** | ESP32 (Arduino), Python, FastAPI, SQLite, HTML/JS/CSS |
-| **Hardware** | ESP32-C6, ESP32-C5, ESP32-C3 |
 
----
+<h3 align="center">Summer Internship Project Report - 2026</h3>
+
+### Team Members
+
+| SAP ID | Name | Email | Course |
+|---|---|---|---|
+| 500126340 | Aryan Kumar | Aryan.126340@stu.upes.ac.in | B.Tech CSE (Cyber Security & Forensics) |
+| 500123832 | Yashvardhan Singh Rawat | Yashvardhan.123832@stu.upes.ac.in | B.Tech CSE (Cyber Security & Forensics) |
+| 500119411 | Dhruv Agarwal | Dhruv.119411@stu.upes.ac.in | B.Tech CSE (Cyber Security & Forensics) |
+
+GitHub link for the project: [https://github.com/CRGaming78/IBM-Summer-Internship-2026](https://github.com/CRGaming78/IBM-Summer-Internship-2026)
+
+<div style="page-break-after: always;"></div>
+
+### Project Details
+
+**Project Title:** Wireless Network Security Monitoring System
+**Domain:** Network Security / IoT / Wireless Intrusion Detection
+**Technology:** ESP32 (Arduino), Python, FastAPI, SQLite, HTML/JS/CSS
+**Hardware:** ESP32-C6, ESP32-C5, ESP32-C3
+**Course:** B.Tech CSE (Cyber Security & Forensics)
+**Group No.:** CSF92
 
 ## Table of Contents
 
@@ -46,7 +63,6 @@
 18. [Conclusion](#18-conclusion)
 19. [References](#19-references)
 
----
 
 ## 1. Abstract
 
@@ -62,7 +78,7 @@ Small institutions typically lack the budget and technical expertise to deploy e
 
 This project addresses this gap by building a complete wireless security monitoring system from hardware to UI. The system uses inexpensive ESP32 microcontrollers as wireless sensors, a Python-based backend for threat detection and behavioral analysis, and a real-time web dashboard for visualization. The key innovation is the combination of rule-based detection with behavioral profiling — the system not only detects known attack patterns but also identifies anomalous device behavior by comparing current activity against learned baselines.
 
----
+<div style="page-break-after: always;"></div>
 
 ## 3. Problem Statement
 
@@ -85,7 +101,7 @@ Design and implement a low-cost wireless network monitoring and intrusion detect
 5. **Low-Cost Deployment** — Use off-the-shelf ESP32 boards (~₹500-300 each) and open-source software to keep the total system cost under ₹1500.
 6. **Self-Maintaining** — Automatic database cleanup (72-hour retention), baseline recalculation, and alert deduplication to minimize administrative overhead.
 
----
+<div style="page-break-after: always;"></div>
 
 ## 5. Literature Survey
 
@@ -100,7 +116,7 @@ Design and implement a low-cost wireless network monitoring and intrusion detect
 
 **Gap Identified:** No existing tool provides simultaneous dual-band monitoring, behavioral profiling, automated risk scoring, and an admin-friendly dashboard at a cost suitable for small institutions.
 
----
+<div style="page-break-after: always;"></div>
 
 ## 6. System Architecture
 
@@ -150,8 +166,6 @@ The system follows a **layered pipeline architecture**:
 4. **Processing Layer** — FastAPI backend stores frames, runs detection rules, computes behavioral profiles, and calculates risk scores.
 5. **Presentation Layer** — A real-time web dashboard receives updates via WebSocket and renders charts, tables, and alerts.
 
----
-
 ## 7. Hardware Design
 
 ### 7.1 Component Selection
@@ -191,8 +205,6 @@ The system follows a **layered pipeline architecture**:
 ### 7.5 Wiring
 
 All three boards connect to the host PC via USB cables. No additional wiring, antennas, or external components are required. The USB connection provides both power and UART serial communication.
-
----
 
 ## 8. Software Design
 
@@ -264,6 +276,8 @@ The behavior profiler builds per-device behavioral baselines and detects anomali
   4. Sums dimension scores into a total risk score (capped at 100).
   5. Generates plain-English reason strings explaining each anomaly.
 
+<div style="page-break-after: always;"></div>
+
 ### 8.5 Database Layer
 
 **Files:** `backend/database.py` (~30 lines), `backend/models.py` (~60 lines)
@@ -314,7 +328,7 @@ An interactive architecture visualization page built with SVG, CSS animations, a
 - **Responsive Scaling:** CSS `transform: scale()` scales the diagram down for narrow viewports, with coordinate correction in the SVG line drawing function.
 - **Grid Background:** CSS gradient-based dot grid with `mask-image` gradient fade at edges for a technical blueprint aesthetic.
 
----
+<div style="page-break-after: always;"></div>
 
 ## 9. Detection Rules
 
@@ -370,7 +384,7 @@ The profiler also generates **plain-English reason strings** for each anomalous 
 | 60 – 79 | High | Red |
 | 80 – 100 | Critical | Dark Red |
 
----
+<div style="page-break-after: always;"></div>
 
 ## 11. API Reference
 
@@ -393,7 +407,7 @@ The profiler also generates **plain-English reason strings** for each anomalous 
 | 15 | `POST` | `/api/simulate/{scenario}` | Trigger built-in traffic simulator |
 | 16 | `WebSocket` | `/ws` | Real-time bidirectional event stream |
 
----
+<div style="page-break-after: always;"></div>
 
 ## 12. Database Schema
 
@@ -528,7 +542,7 @@ IBM/
 | Alert deduplication | Repeat deauth within 5 min | Single alert (not duplicated) | ✅ Pass |
 | DB cleanup | Wait 72+ hours | Old events removed | ✅ Pass |
 
----
+<div style="page-break-after: always;"></div>
 
 ## 15. Results
 
@@ -561,7 +575,7 @@ The system provides a real-time web dashboard accessible at `http://localhost:80
 - **Alert Feed** — Live alerts with severity badges and acknowledge buttons
 - **About Page** — Interactive animated architecture diagram with click-to-expand component details
 
----
+<div style="page-break-after: always;"></div>
 
 ## 16. Comparison with Existing Tools
 
@@ -576,8 +590,7 @@ The system provides a real-time web dashboard accessible at `http://localhost:80
 | Deployment time | Minutes | Hours–Days | <10 minutes |
 | Cost | Free (software only) | ₹₹₹ (licenses) | ~₹1450 (2+1 ESP32 boards) |
 | Expertise required | High (packet analysis) | High (configuration) | Low (open browser) |
-
----
+<div style="page-break-after: always;"></div>
 
 ## 17. Limitations & Future Scope
 
@@ -617,7 +630,7 @@ The **real-time web dashboard** makes the system accessible to administrators wi
 
 At approximately ₹1250  in hardware and zero software licensing cost, the system proves that meaningful wireless security monitoring is achievable for any institution, regardless of budget.
 
----
+<div style="page-break-after: always;"></div>
 
 ## 19. References
 
