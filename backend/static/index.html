@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wireless Network Security Monitor</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1"></script>
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-inner">
+            <h1 class="header-title">Wireless Network Security Monitor</h1>
+            <div class="header-right">
+                <a href="/about" class="btn btn-sm btn-report" title="About / Architecture">ℹ️ About</a>
+                <a href="/api/report" class="btn btn-sm btn-report" title="Download Report">📄 Report</a>
+                <button class="btn btn-sm" id="themeToggle" onclick="toggleTheme()" title="Toggle dark/light mode">🌙</button>
+                <span id="connectionStatus" class="connection-indicator">
+                    <span class="dot dot-red"></span>
+                    <span>Disconnected</span>
+                </span>
+                <span id="threatLevel" class="threat-badge threat-safe">SAFE</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <!-- Stats Row -->
+        <section class="stats-row stats-row-3">
+            <div class="stat-card">
+                <div class="stat-label">Total Frames Captured</div>
+                <div class="stat-value" id="statTotalFrames">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Active Alerts</div>
+                <div class="stat-value" id="statActiveAlerts">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Unique Devices</div>
+                <div class="stat-value" id="statUniqueDevices">0</div>
+            </div>
+        </section>
+
+        <!-- Charts + Alerts -->
+        <section class="main-grid">
+
+            <!-- Left Column: Charts -->
+            <div class="left-col">
+                <div class="card">
+                    <h2 class="card-title">Frame Activity (Last 5 Minutes)</h2>
+                    <div class="chart-container">
+                        <canvas id="frameChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2 class="card-title">Channel Activity</h2>
+                    <div class="chart-container">
+                        <canvas id="channelChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Alerts + Devices -->
+            <div class="right-col">
+                <div class="card">
+                    <h2 class="card-title">Alert Feed</h2>
+                    <div class="alert-feed" id="alertFeed">
+                        <p class="empty-msg">No alerts yet.</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2 class="card-title">Detected Devices</h2>
+                    <div class="table-wrap table-scroll">
+                        <table class="data-table" id="deviceTable">
+                            <thead>
+                                <tr>
+                                    <th class="sortable" data-sort="mac" onclick="sortDevices('mac')">MAC Address</th>
+                                    <th class="sortable" data-sort="vendor" onclick="sortDevices('vendor')">Vendor / Name</th>
+                                    <th class="sortable" data-sort="status" onclick="sortDevices('status')">Status</th>
+                                    <th class="sortable" data-sort="score" onclick="sortDevices('score')">Risk Score</th>
+                                    <th class="sortable" data-sort="last_seen" onclick="sortDevices('last_seen')">Last Seen</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="7" class="empty-msg">No devices detected.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Access Points Table -->
+        <section class="card">
+            <h2 class="card-title">Access Points</h2>
+            <div class="table-wrap table-scroll">
+                <table class="data-table" id="apTable">
+                    <thead>
+                        <tr>
+                            <th>SSID</th>
+                            <th>BSSID</th>
+                            <th>Channel</th>
+                            <th>RSSI</th>
+                            <th>Band</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="7" class="empty-msg">No access points detected.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Simulator Controls -->
+        <section class="card simulator-section">
+            <h2 class="card-title">Simulator Controls</h2>
+            <p class="sim-desc">Use these buttons to simulate different traffic scenarios for testing.</p>
+            <div class="sim-buttons">
+                <button class="btn btn-sim" onclick="sendSimCommand('normal')">Normal Traffic</button>
+                <button class="btn btn-sim btn-danger" onclick="sendSimCommand('deauth')">Deauth Attack</button>
+                <button class="btn btn-sim btn-warning" onclick="sendSimCommand('rogue_ap')">Rogue AP</button>
+                <button class="btn btn-sim btn-warning" onclick="sendSimCommand('beacon_flood')">Beacon Flood</button>
+                <button class="btn btn-sim" onclick="sendSimCommand('stop')">Stop</button>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="footer">
+        <p>Wireless Network Security Monitor &mdash; Dashboard v1.0</p>
+    </footer>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

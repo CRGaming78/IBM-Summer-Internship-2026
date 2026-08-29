@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Architecture - Wireless Monitor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f8fafc; --bg2: #ffffff; --text: #0f172a; --text2: #334155; --dim: #64748b;
+            --border: #e2e8f0; --accent: #3b82f6; --accentD: #2563eb;
+            --green: #22c55e; --red: #ef4444; --orange: #f59e0b;
+            --card: #ffffff; --shadow: rgba(0,0,0,.08); --hdr: #ffffff;
+            --line: #3b82f6; --lineG: rgba(59,130,246,.3);
+            --platform: #f1f5f9;
+        }
+        [data-theme="dark"]{
+            --bg: #0f172a; --bg2: #1e293b; --text: #f8fafc; --text2: #94a3b8; --dim: #64748b;
+            --border: #334155; --accent: #38bdf8; --accentD: #0ea5e9;
+            --green: #4ade80; --red: #f87171; --orange: #fbbf24;
+            --card: #1e293b; --shadow: rgba(0,0,0,.4); --hdr: #0f172a;
+            --line: #38bdf8; --lineG: rgba(56,189,248,.3);
+            --platform: #1e293b;
+        }
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;transition:background .3s,color .3s;}
+
+        /* Header */
+        .hdr{background:var(--hdr);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;border-bottom:1px solid var(--border);}
+        .hdr h1{font-size:18px;font-weight:700;}
+        .hdr-r{display:flex;gap:12px;align-items:center;}
+        .hdr a,.hdr button{color:var(--text2);text-decoration:none;font-size:13px;padding:6px 14px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);cursor:pointer;transition:all .2s;font-weight:600;}
+        .hdr a:hover,.hdr button:hover{color:var(--text);border-color:var(--dim);}
+
+        /* Title */
+        .title-sec{text-align:center;padding:40px 20px 20px;}
+        .title-sec h2{font-size:32px;font-weight:400;color:var(--text);}
+        .title-sec h2 b{font-weight:700;color:var(--accent);}
+        .title-sec p{color:var(--text2);font-size:15px;margin-top:8px;}
+
+        /* ═══ 2D FLOWCHART SCENE ═══ */
+        .scene-wrap{display:flex;justify-content:center;padding:20px 10px 40px;overflow:hidden;width:100%;}
+        .scene{ width:1050px; height:550px; position:relative; transform-origin: top center; transition: transform 0.2s;}
+        .flow-plane{ width:100%; height:100%; position:relative; }
+
+        /* Platform base (Grid Background) */
+        .platform{
+            position:absolute;top:60px;
+            left:50%; transform:translateX(-50%);
+            width:100vw;height:460px;
+            background:var(--platform);
+            background-image: linear-gradient(var(--border) 1px,transparent 1px), linear-gradient(90deg,var(--border) 1px,transparent 1px);
+            background-size:40px 40px;background-position:center;
+            opacity:0.6;
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
+        }
+
+        /* ═══ FLAT NODES ═══ */
+        .node-card{
+            position:absolute; cursor:pointer; z-index:10;
+            width:var(--bw); height:var(--bh);
+            background:var(--card); border:1px solid var(--border); border-radius:12px;
+            display:flex; flex-direction:column; align-items:center; justify-content:center;
+            padding:12px 10px; text-align:center; gap:6px;
+            box-shadow:0 8px 24px var(--shadow);
+            transition:transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+        }
+        .node-card:hover{ transform:translateY(-4px); box-shadow:0 12px 32px var(--shadow); border-color:var(--accent); }
+        .node-card .b-icon{width:46px;height:46px;margin-bottom:4px;}
+        .node-card .b-title{font-size:14px;font-weight:700;color:var(--text);}
+        .node-card .b-sub{font-size:11px;color:var(--text2);font-weight:500;}
+        .node-card .b-hint{font-size:9px;color:var(--accent);font-weight:600;margin-top:2px;text-transform:uppercase;letter-spacing:0.5px;}
+
+        /* LED */
+        .led{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle;}
+        .led-g{background:var(--green);box-shadow:0 0 6px var(--green);animation:blink 2s infinite;}
+        .led-r{background:var(--red);box-shadow:0 0 6px var(--red);animation:blink 1s infinite;}
+        @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+        /* Floating attackers */
+        .atk-float{
+            position:absolute;z-index:20;text-align:center;
+            animation:float-bob 3s ease-in-out infinite;
+            transition: opacity 0.8s ease;
+        }
+        .atk-float.hidden { opacity: 0; pointer-events: none; }
+        .atk-float:nth-child(2){animation-delay:.5s;}
+        .atk-float:nth-child(3){animation-delay:1s;}
+        @keyframes float-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+        .atk-float svg{width:36px;height:36px;filter:drop-shadow(0 4px 8px rgba(239,68,68,.3));}
+        .atk-float span{display:block;font-size:9px;color:var(--red);font-weight:600;margin-top:2px;}
+
+        /* Router deco */
+        .router-deco{position:absolute;z-index:15;text-align:center;}
+        .router-deco svg{width:32px;height:32px;filter:drop-shadow(0 3px 6px rgba(34,197,94,.2));}
+        .router-deco span{display:block;font-size:9px;color:var(--green);font-weight:600;margin-top:2px;}
+
+        /* ═══ SVG lines overlay ═══ */
+        .lines-svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5;}
+        .conn-path{stroke:var(--line);stroke-width:2.5;fill:none;opacity:.5;stroke-linecap:round;transition:stroke 0.3s;}
+        .conn-path.on{opacity:.9;filter:drop-shadow(0 0 4px var(--lineG));}
+        .conn-path.atk{stroke:var(--red);stroke-dasharray:6 4;opacity:.6;stroke-width:1.8;animation:dashf .8s linear infinite;}
+        @keyframes dashf{to{stroke-dashoffset:-20;}}
+        .sig-dot{fill:var(--green);filter:drop-shadow(0 0 6px var(--green));}
+        .sig-dot-r{fill:var(--red);filter:drop-shadow(0 0 6px var(--red));}
+        .conn-label{
+            position:absolute;z-index:12;font-size:10px;color:var(--text);
+            background:var(--bg2);padding:2px 8px;border-radius:12px;border:1px solid var(--border);
+            white-space:nowrap;letter-spacing:.4px;font-weight:600;
+        }
+
+        /* ═══ MODAL OVERLAY ═══ */
+        .overlay{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1000;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s;}
+        .overlay.show{opacity:1;pointer-events:auto;}
+        .ov-card{background:var(--card);border-radius:16px;width:90%;max-width:750px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);transform:scale(.9) translateY(20px);transition:transform .3s ease; border:1px solid var(--border);}
+        .overlay.show .ov-card{transform:scale(1) translateY(0);}
+        .ov-hdr{padding:24px 28px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;}
+        .ov-hdr span{font-size:40px;line-height:1;}
+        .ov-hdr h3{font-size:22px;font-weight:700;color:var(--text);flex:1;}
+        .ov-hdr .ov-x{background:none;border:none;font-size:24px;color:var(--dim);cursor:pointer;padding:4px 8px;}
+        .ov-hdr .ov-x:hover{color:var(--text);}
+        .ov-body{padding:20px 28px 28px;}
+        .ov-body h4{font-size:15px;color:var(--accent);margin:16px 0 8px;font-weight:600;}
+        .ov-body h4:first-child{margin-top:0;}
+        .ov-body p,.ov-body li{font-size:14px;color:var(--text2);line-height:1.6;}
+        .ov-body ul{margin:0 0 0 20px;}
+        .ov-body li{margin:4px 0;}
+        .ov-body code{background:var(--bg2);border:1px solid var(--border);padding:2px 6px;border-radius:4px;font-size:13px;}
+        .ov-body table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0;}
+        .ov-body th,.ov-body td{padding:6px 10px;border:1px solid var(--border);text-align:left;}
+        .ov-body th{background:var(--bg2);color:var(--text);font-weight:600;}
+        .esp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:12px;}
+        .esp-card{border:1px solid var(--border);border-radius:10px;padding:16px;background:var(--bg2);}
+        .esp-card h5{font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px;}
+        .esp-card p{font-size:12px;color:var(--text2);}
+        .esp-card ul{margin:8px 0 0 16px;font-size:12px;color:var(--text2);}
+        .esp-card li{margin:3px 0;}
+
+        /* ═══ Bottom info ═══ */
+        .info-area{max-width:1100px;margin:0 auto;padding:0 24px 40px;}
+        .info-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:14px;}
+        .i-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px;box-shadow:0 2px 8px var(--shadow);transition:background .3s;}
+        .i-card h3{font-size:15px;color:var(--text);margin-bottom:8px;font-weight:700;}
+        .i-card table{width:100%;border-collapse:collapse;font-size:13px;}
+        .i-card th,.i-card td{padding:6px 8px;border-bottom:1px solid var(--border);text-align:left;}
+        .i-card th{color:var(--text);font-weight:600;}
+        .i-card td{color:var(--text2);}
+        .i-card ul{margin:0 0 0 16px;font-size:13px;color:var(--text2);}
+        .i-card li{margin:4px 0;}
+        .bg{display:inline-block;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;}
+        .bg-r{background:#fee2e2;color:#991b1b;}
+        [data-theme="dark"] .bg-r{background:rgba(239,68,68,0.15);color:#fca5a5;}
+    </style>
+</head>
+<body>
+
+<div class="hdr">
+    <h1>System Architecture</h1>
+    <div class="hdr-r">
+        <button id="themeToggle" onclick="toggleTheme()">🌙 Dark</button>
+        <a href="index.html">← Dashboard</a>
+    </div>
+</div>
+
+<div class="title-sec">
+    <h2>Wireless <b>Security Monitor</b></h2>
+    <p>Interactive Architecture Flowchart (Click nodes to expand data)</p>
+</div>
+
+<!-- ═══════════ 2D FLOWCHART SCENE ═══════════ -->
+<div class="scene-wrap">
+<div class="scene" id="scene">
+    <div class="flow-plane" id="flowPlane">
+
+        <!-- Platform base (Grid Background) -->
+        <div class="platform"></div>
+
+        <!-- SVG connection lines -->
+        <svg class="lines-svg" id="svg"></svg>
+
+        <!-- Connection labels -->
+        <div class="conn-label" id="lbl1">UART Serial</div>
+        <div class="conn-label" id="lbl2">HTTP POST</div>
+        <div class="conn-label" id="lbl3">WebSocket</div>
+        <div class="conn-label" id="lbl4">SQL R/W</div>
+
+        <!-- Routers -->
+        <div class="router-deco" id="router1" style="top:340px;left:100px;">
+            <svg viewBox="0 0 48 48" fill="none"><rect x="8" y="28" width="32" height="14" rx="3" stroke="var(--green)" stroke-width="2"/><circle cx="14" cy="35" r="2" fill="var(--green)"/><circle cx="20" cy="35" r="2" fill="var(--green)" opacity=".5"/><line x1="24" y1="28" x2="24" y2="14" stroke="var(--green)" stroke-width="2"/><path d="M14 14a14 14 0 0120 0" stroke="var(--green)" stroke-width="2" fill="none"/><path d="M18 18a8 8 0 0112 0" stroke="var(--green)" stroke-width="2" fill="none"/></svg>
+            <span><span class="led led-g"></span>Router 2.4G</span>
+        </div>
+        <div class="router-deco" id="router2" style="top:25px;left:155px;">
+            <svg viewBox="0 0 48 48" fill="none"><rect x="8" y="28" width="32" height="14" rx="3" stroke="var(--green)" stroke-width="2"/><circle cx="14" cy="35" r="2" fill="var(--green)"/><circle cx="20" cy="35" r="2" fill="var(--green)" opacity=".5"/><line x1="24" y1="28" x2="24" y2="14" stroke="var(--green)" stroke-width="2"/><path d="M14 14a14 14 0 0120 0" stroke="var(--green)" stroke-width="2" fill="none"/><path d="M18 18a8 8 0 0112 0" stroke="var(--green)" stroke-width="2" fill="none"/></svg>
+            <span><span class="led led-g"></span>Router 5G</span>
+        </div>
+
+        <!-- Attackers (floating) -->
+        <div class="atk-float" id="atk1">
+            <svg viewBox="0 0 48 48" fill="none"><path d="M24 4L6 42h36L24 4z" stroke="var(--red)" stroke-width="2.5" fill="none"/><line x1="24" y1="18" x2="24" y2="28" stroke="var(--red)" stroke-width="2.5"/><circle cx="24" cy="34" r="2" fill="var(--red)"/></svg>
+            <span><span class="led led-r"></span>Attacker</span>
+        </div>
+        <div class="atk-float" id="atk2">
+            <svg viewBox="0 0 48 48" fill="none"><rect x="6" y="12" width="36" height="24" rx="4" stroke="var(--red)" stroke-width="2.5" fill="none"/><path d="M6 18l18 10 18-10" stroke="var(--red)" stroke-width="2"/></svg>
+            <span><span class="led led-r"></span>Rogue AP</span>
+        </div>
+        <div class="atk-float" id="atk3">
+            <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="16" stroke="var(--red)" stroke-width="2.5" fill="none"/><circle cx="24" cy="24" r="6" stroke="var(--red)" stroke-width="2" fill="none"/><line x1="24" y1="4" x2="24" y2="8" stroke="var(--red)" stroke-width="2"/><line x1="24" y1="40" x2="24" y2="44" stroke="var(--red)" stroke-width="2"/><line x1="4" y1="24" x2="8" y2="24" stroke="var(--red)" stroke-width="2"/><line x1="40" y1="24" x2="44" y2="24" stroke="var(--red)" stroke-width="2"/></svg>
+            <span><span class="led led-r"></span>Probe Scan</span>
+        </div>
+
+        <!-- ═══ 2D BOX NODES ═══ -->
+
+        <!-- ESP32 Sensors -->
+        <div class="node-card" id="nEsp" style="top:120px;left:60px;--bw:140px;--bh:120px;" onclick="openOv('esp')">
+            <svg class="b-icon" viewBox="0 0 48 48" fill="none">
+                <rect x="8" y="14" width="32" height="20" rx="4" fill="var(--accent)" opacity=".15" stroke="var(--accent)" stroke-width="2"/>
+                <rect x="14" y="18" width="8" height="8" rx="1.5" fill="var(--accent)" opacity=".6"/>
+                <rect x="26" y="18" width="8" height="8" rx="1.5" fill="var(--accent)"/>
+                <line x1="16" y1="14" x2="16" y2="8" stroke="var(--accent)" stroke-width="2"/>
+                <line x1="24" y1="14" x2="24" y2="8" stroke="var(--accent)" stroke-width="2"/>
+                <line x1="32" y1="14" x2="32" y2="8" stroke="var(--accent)" stroke-width="2"/>
+                <line x1="16" y1="34" x2="16" y2="40" stroke="var(--accent)" stroke-width="2"/>
+                <line x1="24" y1="34" x2="24" y2="40" stroke="var(--accent)" stroke-width="2"/>
+                <line x1="32" y1="34" x2="32" y2="40" stroke="var(--accent)" stroke-width="2"/>
+            </svg>
+            <div class="b-title">ESP32 Sensors</div>
+            <div class="b-sub"><span class="led led-g"></span>3 Nodes Active</div>
+            <div class="b-hint">Click for info</div>
+        </div>
+
+        <!-- UART Orchestrator -->
+        <div class="node-card" id="nUart" style="top:120px;left:300px;--bw:140px;--bh:120px;" onclick="openOv('uart')">
+            <svg class="b-icon" viewBox="0 0 48 48" fill="none">
+                <rect x="6" y="8" width="36" height="32" rx="4" fill="var(--accent)" opacity=".1" stroke="var(--accent)" stroke-width="2"/>
+                <line x1="6" y1="16" x2="42" y2="16" stroke="var(--accent)" stroke-width="1.5"/>
+                <circle cx="12" cy="12" r="2.5" fill="var(--red)"/>
+                <circle cx="19" cy="12" r="2.5" fill="var(--orange)"/>
+                <circle cx="26" cy="12" r="2.5" fill="var(--green)"/>
+                <rect x="11" y="20" width="16" height="2" rx="1" fill="var(--accent)" opacity=".4"/>
+                <rect x="11" y="25" width="22" height="2" rx="1" fill="var(--accent)" opacity=".3"/>
+                <rect x="11" y="30" width="12" height="2" rx="1" fill="var(--accent)" opacity=".2"/>
+            </svg>
+            <div class="b-title">Orchestrator</div>
+            <div class="b-sub"><span class="led led-g"></span>Python Script</div>
+            <div class="b-hint">Click for info</div>
+        </div>
+
+        <!-- FastAPI Backend -->
+        <div class="node-card" id="nApi" style="top:120px;left:540px;--bw:140px;--bh:120px;" onclick="openOv('api')">
+            <svg class="b-icon" viewBox="0 0 48 48" fill="none">
+                <rect x="10" y="4" width="28" height="11" rx="3" fill="var(--accent)" opacity=".15" stroke="var(--accent)" stroke-width="2"/>
+                <rect x="10" y="18" width="28" height="11" rx="3" fill="var(--accent)" opacity=".1" stroke="var(--accent)" stroke-width="2"/>
+                <rect x="10" y="32" width="28" height="11" rx="3" fill="var(--accent)" opacity=".05" stroke="var(--accent)" stroke-width="2"/>
+                <circle cx="16" cy="9.5" r="2.5" fill="var(--green)"/>
+                <circle cx="16" cy="23.5" r="2.5" fill="var(--green)"/>
+                <circle cx="16" cy="37.5" r="2.5" fill="var(--green)"/>
+                <line x1="22" y1="9.5" x2="32" y2="9.5" stroke="var(--accent)" stroke-width="1.5" opacity=".3"/>
+                <line x1="22" y1="23.5" x2="32" y2="23.5" stroke="var(--accent)" stroke-width="1.5" opacity=".3"/>
+                <line x1="22" y1="37.5" x2="32" y2="37.5" stroke="var(--accent)" stroke-width="1.5" opacity=".3"/>
+            </svg>
+            <div class="b-title">FastAPI Backend</div>
+            <div class="b-sub"><span class="led led-g"></span>Core Engine</div>
+            <div class="b-hint">Click for info</div>
+        </div>
+
+        <!-- Dashboard -->
+        <div class="node-card" id="nDash" style="top:120px;left:790px;--bw:140px;--bh:120px;" onclick="openOv('dash')">
+            <svg class="b-icon" viewBox="0 0 48 48" fill="none">
+                <rect x="4" y="6" width="40" height="26" rx="3" fill="var(--accent)" opacity=".1" stroke="var(--accent)" stroke-width="2"/>
+                <polyline points="10,26 16,18 22,22 28,14 34,20 40,12" stroke="var(--green)" stroke-width="2" fill="none"/>
+                <line x1="18" y1="32" x2="18" y2="38" stroke="var(--accent)" stroke-width="2"/>
+                <line x1="30" y1="32" x2="30" y2="38" stroke="var(--accent)" stroke-width="2"/>
+                <line x1="12" y1="40" x2="36" y2="40" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+            <div class="b-title">Dashboard</div>
+            <div class="b-sub"><span class="led led-g"></span>Real-time UI</div>
+            <div class="b-hint">Click for info</div>
+        </div>
+
+        <!-- Database -->
+        <div class="node-card" id="nDb" style="top:320px;left:545px;--bw:130px;--bh:100px;" onclick="openOv('db')">
+            <svg class="b-icon" viewBox="0 0 48 48" fill="none" style="width:36px;height:36px;">
+                <ellipse cx="24" cy="13" rx="15" ry="6" fill="var(--accent)" opacity=".1" stroke="var(--accent)" stroke-width="2"/>
+                <path d="M9 13v20c0 3.3 6.7 6 15 6s15-2.7 15-6V13" stroke="var(--accent)" stroke-width="2" fill="none"/>
+                <path d="M9 22c0 3.3 6.7 6 15 6s15-2.7 15-6" stroke="var(--accent)" stroke-width="1.5" opacity=".3"/>
+                <path d="M9 31c0 3.3 6.7 6 15 6s15-2.7 15-6" stroke="var(--accent)" stroke-width="1.5" opacity=".3"/>
+            </svg>
+            <div class="b-title">SQLite DB</div>
+            <div class="b-sub">72h Retention</div>
+        </div>
+
+    </div>
+</div>
+</div>
+
+<!-- Bottom info -->
+<div class="info-area">
+    <div class="info-row">
+        <div class="i-card"><h3>Detection Rules</h3>
+            <table><tr><th>Rule</th><th>Score</th><th>Sev</th></tr>
+            <tr><td>Deauth Flood</td><td>+50</td><td><span class="bg bg-r">CRIT</span></td></tr>
+            <tr><td>Rogue AP</td><td>+80</td><td><span class="bg bg-r">CRIT</span></td></tr>
+            <tr><td>Evil Twin</td><td>+80</td><td><span class="bg bg-r">CRIT</span></td></tr>
+            <tr><td>Beacon Flood</td><td>+60</td><td><span class="bg bg-r">HIGH</span></td></tr>
+            <tr><td>Disassoc Flood</td><td>+40</td><td><span class="bg bg-r">HIGH</span></td></tr>
+            <tr><td>Probe Harvest</td><td>+30</td><td>WARN</td></tr>
+            <tr><td>RSSI Anomaly</td><td>+25</td><td>WARN</td></tr>
+            <tr><td>Unknown Device</td><td>+20</td><td>WARN</td></tr></table>
+        </div>
+        <div class="i-card"><h3>Behavior Profiling (6D)</h3>
+            <table><tr><th>Dimension</th><th>Max Score Impact</th></tr>
+            <tr><td>Packet Rate anomaly</td><td>+25</td></tr>
+            <tr><td>Frame Distribution shift</td><td>+20</td></tr>
+            <tr><td>Active Hours deviation</td><td>+15</td></tr>
+            <tr><td>Destination Diversity spike</td><td>+15</td></tr>
+            <tr><td>New Destinations contacted</td><td>+15</td></tr>
+            <tr><td>Channel Spread increase</td><td>+10</td></tr></table>
+        </div>
+        <div class="i-card"><h3>vs Existing Tools</h3>
+            <table><tr><th>Feature</th><th>Wireshark</th><th>Nagios</th><th>Ours</th></tr>
+            <tr><td>Multi-channel</td><td>❌</td><td>❌</td><td>✅</td></tr>
+            <tr><td>Behavior Profiles</td><td>❌</td><td>❌</td><td>✅</td></tr>
+            <tr><td>Auto-Scoring</td><td>❌</td><td>⚠️</td><td>✅</td></tr>
+            <tr><td>Admin-friendly</td><td>❌</td><td>⚠️</td><td>✅</td></tr>
+            <tr><td>Cost</td><td>Free</td><td>$$$</td><td>~$15</td></tr></table>
+        </div>
+    </div>
+    <div class="info-row">
+        <div class="i-card"><h3>Tech Stack</h3><ul>
+            <li><b>Hardware:</b> ESP32-C6 / C5 / C3</li>
+            <li><b>Backend:</b> Python 3.12, FastAPI, Uvicorn</li>
+            <li><b>Database:</b> SQLite + SQLAlchemy (async)</li>
+            <li><b>Frontend:</b> Vanilla HTML/JS/CSS, Chart.js</li>
+            <li><b>Transport:</b> UART + REST + WebSocket</li></ul>
+        </div>
+        <div class="i-card"><h3>Data Flow</h3><ul>
+            <li>ESP32 captures 802.11 mgmt frames</li>
+            <li>UART sends CSV data to host PC</li>
+            <li>Orchestrator POSTs to <code>/api/ingest</code></li>
+            <li>Backend stores, detects threats, profiles, and scores</li>
+            <li>WebSocket broadcasts to real-time dashboard UI</li></ul>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Overlay -->
+<div class="overlay" id="overlay" onclick="closeOv(event)">
+    <div class="ov-card" id="ovCard"></div>
+</div>
+
+<script>
+// Theme logic
+function toggleTheme(){
+    var b=document.body,btn=document.getElementById('themeToggle');
+    if(b.getAttribute('data-theme')==='dark'){b.removeAttribute('data-theme');btn.textContent='🌙 Dark';localStorage.setItem('theme','light');}
+    else{b.setAttribute('data-theme','dark');btn.textContent='☀️ Light';localStorage.setItem('theme','dark');}
+    setTimeout(drawLines,80);
+}
+if(localStorage.getItem('theme')==='light'){
+    document.body.removeAttribute('data-theme');
+    document.getElementById('themeToggle').textContent='🌙 Dark';
+} else {
+    document.body.setAttribute('data-theme','dark');
+    document.getElementById('themeToggle').textContent='☀️ Light';
+}
+
+// Overlay data
+var OV={
+    esp:{icon:'📡',title:'ESP32 Sensor Nodes',body:'<h4>Three specialized microcontrollers:</h4><div class="esp-grid"><div class="esp-card"><h5><span class="led led-g"></span> ESP32-C6</h5><p>2.4 GHz Sniffer</p><ul><li>Promiscuous mode</li><li>Locked Channel 1</li><li>Beacons, probes, deauth</li><li>CSV via UART 115200</li></ul></div><div class="esp-card"><h5><span class="led led-g"></span> ESP32-C5</h5><p>5 GHz Sniffer</p><ul><li>Channel hopping 36→165</li><li>Scan list rotates 60s</li><li>DFS + non-DFS coverage</li><li>Paused during commands</li></ul></div><div class="esp-card"><h5><span class="led led-r"></span> ESP32-C3</h5><p>Attack Node (Test)</p><ul><li>Deauth flood attacks</li><li>Fixed Channel 1</li><li>Targets specific BSSID</li><li>Educational use only</li></ul></div></div>'},
+    uart:{icon:'🖥️',title:'UART Orchestrator',body:'<h4>What it does</h4><p>Python script bridging ESP32 hardware and the backend server on the host PC.</p><h4>Responsibilities</h4><ul><li>Reads serial from ESP32-C6 + C5</li><li>Parses CSV: <code>type,src,dst,ssid,bssid,rssi,ch</code></li><li>POSTs each frame to <code>/api/ingest</code></li><li>Sends channel hop commands to C5</li><li>Pauses C5 during orchestrator commands</li><li>Rotates 5GHz scan list every 60s</li></ul><h4>Why UART?</h4><p>ESP32 in promiscuous mode can\'t use WiFi — it\'s busy sniffing. UART serial is the only way out without disrupting capture.</p>'},
+    api:{icon:'⚙️',title:'FastAPI Backend',body:'<h4>Core Engine</h4><p>Async Python server: ingest → detect → profile → broadcast.</p><h4>Modules</h4><table><tr><th>Module</th><th>Function</th></tr><tr><td><b>Ingest API</b></td><td>Stores frames in SQLite</td></tr><tr><td><b>Rule Engine</b></td><td>8 detection rules</td></tr><tr><td><b>Profiler</b></td><td>6-dimension behavior fingerprinting</td></tr><tr><td><b>Risk Scorer</b></td><td>Per-device 0-100 with reasons</td></tr><tr><td><b>WebSocket</b></td><td>Real-time broadcast</td></tr><tr><td><b>Cleanup</b></td><td>72h retention, hourly</td></tr><tr><td><b>Reports</b></td><td>HTML export</td></tr></table><h4>API Endpoints</h4><table><tr><th>Method</th><th>Path</th><th>Purpose</th></tr><tr><td>POST</td><td><code>/api/ingest</code></td><td>Receive frame</td></tr><tr><td>GET</td><td><code>/api/devices</code></td><td>List devices</td></tr><tr><td>GET</td><td><code>/api/device-risks</code></td><td>Risk scores</td></tr><tr><td>GET</td><td><code>/api/device-baseline/{mac}</code></td><td>Baseline vs current</td></tr><tr><td>GET</td><td><code>/api/report</code></td><td>HTML report</td></tr><tr><td>WS</td><td><code>/ws</code></td><td>WebSocket</td></tr></table>'},
+    dash:{icon:'📊',title:'Dashboard',body:'<h4>Real-time Monitoring UI</h4><p>Vanilla HTML/JS/CSS with live WebSocket updates.</p><h4>Panels</h4><ul><li><b>Stats Row</b> — events, alerts, devices, rogues</li><li><b>Frame Activity</b> — real-time line chart</li><li><b>Channel Activity</b> — bar chart</li><li><b>Device Table</b> — MAC, vendor, score, sortable</li><li><b>Alert Feed</b> — severity-coded, acknowledge</li><li><b>AP Table</b> — trust/untrust controls</li><li><b>Baseline Modal</b> — click score → normal vs current</li><li><b>Simulator</b> — normal, deauth, rogue, beacon flood</li></ul><h4>Features</h4><ul><li>Dark/Light mode toggle</li><li>MAC vendor lookup (200+ OUI)</li><li>Sortable columns</li><li>HTML report download</li></ul>'},
+    db:{icon:'🗄️',title:'SQLite Database',body:'<h4>Schema</h4><table><tr><th>Table</th><th>Key Fields</th><th>Purpose</th></tr><tr><td><b>wifi_events</b></td><td>sensor_id, band, channel, frame_type, src/dst_mac, ssid, bssid, rssi</td><td>Every frame</td></tr><tr><td><b>alerts</b></td><td>alert_type, severity, description, source_mac, threat_score</td><td>Detections</td></tr><tr><td><b>trusted_aps</b></td><td>ssid, bssid, expected_channel</td><td>Whitelist</td></tr></table><h4>Maintenance</h4><ul><li>Auto-cleanup runs hourly</li><li>Deletes events > 72 hours</li><li>Deletes old acknowledged alerts</li><li>Keeps DB size manageable</li></ul>'}
+};
+
+function openOv(k){
+    var d=OV[k];if(!d)return;
+    document.getElementById('ovCard').innerHTML='<div class="ov-hdr"><span style="font-size:36px">'+d.icon+'</span><h3>'+d.title+'</h3><button class="ov-x" onclick="closeOv(event,1)">✕</button></div><div class="ov-body">'+d.body+'</div>';
+    document.getElementById('overlay').classList.add('show');document.body.style.overflow='hidden';
+}
+function closeOv(e,f){if(f||e.target===document.getElementById('overlay')){document.getElementById('overlay').classList.remove('show');document.body.style.overflow='';}}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeOv(e,1);});
+
+// ── SVG Lines & Scaling ──
+function getScale() {
+    var wrap = document.querySelector('.scene-wrap');
+    if(!wrap) return 1;
+    var w = wrap.clientWidth;
+    return (w < 1050) ? (w / 1050) : 1;
+}
+
+function scaleScene() {
+    var scene = document.getElementById('scene');
+    var wrap = document.querySelector('.scene-wrap');
+    var s = getScale();
+    if(s < 1) {
+        scene.style.transform = 'scale(' + s + ')';
+        wrap.style.height = (550 * s + 60) + 'px';
+    } else {
+        scene.style.transform = 'none';
+        wrap.style.height = 'auto';
+    }
+}
+
+function gp(id){
+    var el=document.getElementById(id),sc=document.getElementById('scene');
+    if(!el||!sc)return null;
+    var sr=sc.getBoundingClientRect(),er=el.getBoundingClientRect();
+    var s = getScale();
+    return{
+        cx: (er.left-sr.left+er.width/2)/s,
+        cy: (er.top-sr.top+er.height/2)/s,
+        t: (er.top-sr.top)/s,
+        b: (er.top-sr.top+er.height)/s,
+        l: (er.left-sr.left)/s,
+        r: (er.left-sr.left+er.width)/s
+    };
+}
+
+function drawLines(){
+    var s=document.getElementById('svg');if(!s)return;s.innerHTML='';
+    var ns='http://www.w3.org/2000/svg';
+
+    // Markers
+    var defs=document.createElementNS(ns,'defs');
+    [{id:'aG',fill:'var(--line)'},{id:'aR',fill:'var(--red)'}].forEach(function(m){
+        var mk=document.createElementNS(ns,'marker');
+        mk.setAttribute('id',m.id);mk.setAttribute('viewBox','0 0 10 10');
+        mk.setAttribute('refX','9');mk.setAttribute('refY','5');
+        mk.setAttribute('markerWidth','6');mk.setAttribute('markerHeight','6');
+        mk.setAttribute('orient','auto-start-reverse');
+        var p=document.createElementNS(ns,'path');p.setAttribute('d','M0 0L10 5L0 10z');p.setAttribute('fill',m.fill);
+        mk.appendChild(p);defs.appendChild(mk);
+    });
+    s.appendChild(defs);
+
+    // Main connections
+    var conns=[
+        {f:'nEsp',t:'nUart',lbl:'lbl1'},
+        {f:'nUart',t:'nApi',lbl:'lbl2'},
+        {f:'nApi',t:'nDash',lbl:'lbl3'},
+        {f:'nApi',t:'nDb',lbl:'lbl4',vert:1}
+    ];
+    conns.forEach(function(c,i){
+        var a=gp(c.f),b=gp(c.t);if(!a||!b)return;
+        var x1,y1,x2,y2;
+        if(c.vert){x1=a.cx;y1=a.b;x2=b.cx;y2=b.t;}
+        else{x1=a.r;y1=a.cy;x2=b.l;y2=b.cy;}
+        var mx=(x1+x2)/2,my=(y1+y2)/2;
+        var d=c.vert?'M'+x1+','+y1+' C'+x1+','+(y1+35)+' '+x2+','+(y2-35)+' '+x2+','+y2
+            :'M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2;
+
+        var p=document.createElementNS(ns,'path');p.setAttribute('d',d);
+        p.setAttribute('class','conn-path on');p.setAttribute('marker-end','url(#aG)');
+        s.appendChild(p);
+
+        var lbl=document.getElementById(c.lbl);
+        if(lbl){lbl.style.left=mx+'px';lbl.style.top=(my-10)+'px';lbl.style.transform='translateX(-50%)';}
+
+        // Double signal dots
+        for(var j=0;j<2;j++){
+            var dot=document.createElementNS(ns,'circle');dot.setAttribute('r',j?'3':'4');
+            dot.setAttribute('class','sig-dot');dot.style.opacity=j?'.5':'1';
+            var am=document.createElementNS(ns,'animateMotion');
+            am.setAttribute('dur',(2.2+i*.3+j*1.1)+'s');am.setAttribute('repeatCount','indefinite');am.setAttribute('path',d);
+            dot.appendChild(am);s.appendChild(dot);
+        }
+    });
+
+    // Router connections (sniffing)
+    var esp=gp('nEsp');if(!esp)return;
+    ['router1','router2'].forEach(function(id,i){
+        var r=gp(id);if(!r)return;
+        var tx=esp.cx + (i===0?-20:20); // Connect to left/right sides of ESP center
+        var ty= (i===0) ? esp.b : esp.t; // router1 is below (connects to bottom), router2 is above (connects to top)
+        var ry= (i===0) ? r.t : r.b;    // line starts at router1 top, or router2 bottom
+        
+        var d='M'+r.cx+','+ry+' Q'+((r.cx+tx)/2)+','+((ry+ty)/2)+' '+tx+','+ty;
+        var p=document.createElementNS(ns,'path');p.setAttribute('d',d);
+        p.setAttribute('class','conn-path');
+        p.style.stroke='var(--green)';
+        p.style.strokeDasharray='4 4';
+        p.style.opacity='0.4';
+        s.appendChild(p);
+        
+        var rd=document.createElementNS(ns,'circle');rd.setAttribute('r','2.5');rd.setAttribute('class','sig-dot');
+        var ram=document.createElementNS(ns,'animateMotion');ram.setAttribute('dur',(1.8+i*.3)+'s');ram.setAttribute('repeatCount','indefinite');ram.setAttribute('path',d);
+        rd.appendChild(ram);s.appendChild(rd);
+    });
+
+    // Attack lines
+    ['atk1','atk2','atk3'].forEach(function(id,i){
+        var el = document.getElementById(id);
+        if(!el || el.classList.contains('hidden')) return; // skip hidden attackers
+        var a=gp(id);if(!a)return;
+        var tx=esp.r-10,ty=esp.cy;
+        if(i===0){tx=esp.cx;ty=esp.t;}
+        if(i===2){tx=esp.l+10;ty=esp.b;}
+        var d='M'+a.cx+','+a.cy+' Q'+((a.cx+tx)/2)+','+a.cy+' '+tx+','+ty;
+        var p=document.createElementNS(ns,'path');p.setAttribute('d',d);
+        p.setAttribute('class','conn-path atk');p.setAttribute('marker-end','url(#aR)');
+        s.appendChild(p);
+        var rd=document.createElementNS(ns,'circle');rd.setAttribute('r','3');rd.setAttribute('class','sig-dot-r');
+        var ram=document.createElementNS(ns,'animateMotion');ram.setAttribute('dur',(1.3+i*.4)+'s');ram.setAttribute('repeatCount','indefinite');ram.setAttribute('path',d);
+        rd.appendChild(ram);s.appendChild(rd);
+    });
+}
+
+function attackerCycle(id, angleBase) {
+    var el = document.getElementById(id);
+    if(!el) return;
+    
+    // Random active time between 3s and 8s
+    var activeTime = 3000 + Math.random() * 5000;
+    
+    setTimeout(function() {
+        // Disconnect and fade out
+        el.classList.add('hidden');
+        drawLines(); 
+        
+        // Wait 1.5s for fade, then reposition and reappear
+        setTimeout(function() {
+            var cx = 130, cy = 180;
+            // Larger random jitter for angles and radius when respawning
+            var angle = angleBase + (Math.random() * 0.8 - 0.4);
+            var radius = 100 + Math.random() * 80;
+            el.style.left = (cx + Math.cos(angle) * radius - 18) + 'px';
+            el.style.top = (cy + Math.sin(angle) * radius - 18) + 'px';
+            
+            // Reconnect and fade in
+            el.classList.remove('hidden');
+            drawLines();
+            
+            // Schedule next cycle
+            attackerCycle(id, angleBase);
+        }, 1500);
+    }, activeTime);
+}
+
+window.addEventListener('load',function(){
+    scaleScene();
+    var cx = 130, cy = 180; 
+    var angles = [-Math.PI/1.5, Math.PI, Math.PI/1.5]; // Top-left, Left, Bottom-left
+    ['atk1','atk2','atk3'].forEach(function(id, i) {
+        var el = document.getElementById(id);
+        if(!el) return;
+        var angle = angles[i] + (Math.random() * 0.4 - 0.2);
+        var radius = 110 + Math.random() * 40;
+        el.style.left = (cx + Math.cos(angle) * radius - 18) + 'px';
+        el.style.top = (cy + Math.sin(angle) * radius - 18) + 'px';
+        
+        // Stagger their start times so they don't all disappear at once
+        setTimeout(function(){ attackerCycle(id, angles[i]); }, i * 2000);
+    });
+    
+    setTimeout(drawLines,200);
+});
+window.addEventListener('resize', function(){
+    scaleScene();
+    drawLines();
+});
+</script>
+</body>
+</html>
